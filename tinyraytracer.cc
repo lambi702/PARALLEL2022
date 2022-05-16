@@ -181,7 +181,7 @@ Tinyraytracer::render(float anglev, float angleh, float anglel)
   Vec3f ez(cos(anglev * M_PI / 180) * sin(angleh * M_PI / 180),
 	   - sin(anglev * M_PI / 180),
 	   cos(anglev * M_PI / 180) * cos(angleh * M_PI / 180));
-
+  #pragma omp parallel for
   for (size_t j = 0; j < height; j++) { // actual rendering loop
     for (size_t i = 0; i < width; i++) {
       Vec3f v_0 = ex * ((i + 0.5) -  width/2.) + ey * (-(j + 0.5) + height/2.) + ez * (height / (-2. * tan(fov/2.) ));
