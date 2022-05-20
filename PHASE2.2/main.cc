@@ -171,19 +171,18 @@ void master(Tinyraytracer *tinyraytracer, std::queue<Angle> *qAngles, sf::Image 
 		}
 		if (update)
 		{
-
 			Angle angles = Angle(angle_v, angle_h, angle_logo,id);
 			qAngles->push(angles);
 			mtImages.lock();
 			bool test = false;
-			if (images[id % BUFFER_SIZE])
+			if (images[id % BUFFER_SIZE] == sf::Image ())
 				test = true;
 			mtImages.unlock();
 			if (test)
 			{
 				mtImages.lock();
 				texture.loadFromImage(images[id % BUFFER_SIZE]);
-				images[id % BUFFER_SIZE] = NULL;
+				images[id % BUFFER_SIZE] = sf::Image ();
 				mtImages.unlock();
 				window.clear();
 				window.draw(sprite);
@@ -210,7 +209,7 @@ void computeImage(Tinyraytracer *tinyraytracer, std::queue<Angle> *qAngles, sf::
 	{
 		bool boucle = true;
 		mtAngles.lock();
-		bool test = qAngles->isEmpty();
+		bool test = qAngles->empty();
 		mtAngles.unlock();
 		sf::Image = tinyraytracer->render(angles.v, angles.h, angles.logo);
 		while (boucle && !test)

@@ -8,7 +8,7 @@ debug: CPPFLAGS+= -ftrapv
 debug: CPPFLAGS+= -DDEBUG
 
 tinyrt: tinyraytracer.o model.o main.o
-	g++ $(LDFLAGS) $(CPPFLAGS) -o tinyrt tinyraytracer.o model.o main.o -lsfml-graphics -lsfml-window -lsfml-system
+	g++ $(LDFLAGS) $(CPPFLAGS) -o tinyrt tinyraytracer.o model.o main.o
 
 tinyraytracer.o: tinyraytracer.cc tinyraytracer.hh model.hh
 	g++ $(CPPFLAGS) -c tinyraytracer.cc
