@@ -1,13 +1,47 @@
+#include <iostream>
 #include <cstring>
-
+#include <thread>
+#include <queue>
+#include <mutex>
+#include <vector>
 #include "tinyraytracer.hh"
-
 /*
 #define WIDTH 1024
 #define HEIGHT 768
 */
 #define WIDTH 512
 #define HEIGHT 384
+#define Q_MAX 20
+
+struct ImgPriority {
+  sf::Image image;
+  int order;
+
+  ImgPriority(sf::Image image,int order)
+    : image(image), order(order)
+    {
+    }
+};
+
+struct cmpPriority {
+  bool operator()(ImgPriority const& i1, ImgPriority const& i2){
+    return i1.order > i2.order; // Faire sortir l'élément ayant la plus petite priorité
+  }
+};
+
+struct Angle
+{
+	float v;
+	float h;
+	float logo;
+	unsigned long long int frameNb;
+};
+
+bool boolWindow = true;
+void compute(Tinyraytracer tinyraytracer);
+std::mutex mx;
+std::priority_queue<ImgPriority,std::vector<ImgPriority>,cmpPriority> qImages;
+std::queue<Angle> qAngles;
 
 int main(int argc, char *argv[])
 {
@@ -53,11 +87,17 @@ int main(int argc, char *argv[])
 
 	if (gui)
 	{
+		std::vector<std::thread> vThreads;
+		for (size_t i = 0; i < (std::thread::hardware_concurrency() - 1); i++)
+			vThreads.push_back(std::thread(compute, tinyraytracer));
+		uint64_t frameCounter = 0;
+		float fps = 30.;
+
 		sf::RenderWindow window(sf::VideoMode(WIDTH, HEIGHT), "TinyRT");
 		sf::Image result;
 		sf::Texture texture;
 		sf::Sprite sprite;
-		float angle_h = 0., angle_v = 0.;
+		float angle_h = 0., angle_v = 0., z_red = -0.5, size_mirror = 4.;
 		float angle_logo = 15.;
 		sf::Clock clock;
 		clock.restart();
@@ -66,7 +106,7 @@ int main(int argc, char *argv[])
 		window.clear();
 		window.display();
 
-		sf::Image img = tinyraytracer.render(angle_v, angle_h, angle_logo);
+		sf::Image img = tinyraytracer.render(angle_v, angle_h, angle_logo, z_red, size_mirror);
 		texture.loadFromImage(img);
 		sprite.setTexture(texture);
 		window.draw(sprite);
@@ -75,11 +115,18 @@ int main(int argc, char *argv[])
 		while (window.isOpen())
 		{
 			sf::Event event;
-			bool update = false;
+			bool update = false, cond = false;
 			if (animate)
 			{
-				angle_logo += angle_logo >= 359. ? -359. : 1.;
-				update = true;
+				mx.lock();
+				if (qAngles.size() < Q_MAX)
+				{
+					angle_logo += 6. / fps;
+					if (angle_logo>=360.)
+						angle_logo -= 360.; 
+							update = true;
+				}
+				mx.unlock();
 			}
 			if (window.pollEvent(event))
 			{
@@ -117,30 +164,61 @@ int main(int argc, char *argv[])
 						std::cerr << "Key pressed: "
 								  << "Space" << std::endl;
 					else if (event.key.code == sf::Keyboard::Q)
+					{
+						for (size_t i = 0; i < std::thread::hardware_concurrency() - 1; i++)
+							vThreads.at(i).join();
 						window.close();
+						mx.lock();
+						boolWindow = false;
+						mx.unlock();
+					}
 					else
 						std::cerr << "Key pressed: "
 								  << "Unknown" << std::endl;
 				}
 				if (event.type == sf::Event::Closed)
+				{
+					mx.lock();
+					boolWindow = false;
+					mx.unlock();
+
 					window.close();
+				}
 			}
 			if (update)
 			{
 				static unsigned framecount = 0;
-				img = tinyraytracer.render(angle_v, angle_h, angle_logo);
-				texture.loadFromImage(img);
-				window.clear();
-				window.draw(sprite);
-				window.display();
-				framecount++;
-				sf::Time currentTime = clock.getElapsedTime();
-				if (currentTime.asSeconds() > 1.0)
+				Angle angle;
+				angle.v = angle_v;
+				angle.h = angle_h;
+				angle.logo = angle_logo;
+				angle.frameNb = frameCounter;
+
+				mx.lock();
+				qAngles.push(angle);
+				frameCounter++;
+				cond = (!qImages.empty() && qImages.size() > 10);
+				mx.unlock();
+				if (cond)
 				{
-					float fps = framecount / currentTime.asSeconds();
-					std::cout << "fps: " << fps << std::endl;
-					clock.restart();
-					framecount = 0;
+					mx.lock();
+					ImgPriority ip = qImages.top();
+					qImages.pop();
+					mx.unlock();
+
+					texture.loadFromImage(ip.image);
+					window.clear();
+					window.draw(sprite);
+					window.display();
+					framecount++;
+					sf::Time currentTime = clock.getElapsedTime();
+					if (currentTime.asSeconds() > 1.0)
+					{
+						fps = framecount / currentTime.asSeconds();
+						std::cout << "fps: " << fps << std::endl;
+						clock.restart();
+						framecount = 0;
+					}
 				}
 			}
 		}
@@ -151,4 +229,28 @@ int main(int argc, char *argv[])
 		result.saveToFile("out.jpg");
 	}
 	return 0;
+}
+
+void compute(Tinyraytracer tinyraytracer)
+{
+	bool cond = false;
+	while (boolWindow)
+	{
+		mx.lock();
+		cond = !qAngles.empty();
+		mx.unlock();
+		if (cond)
+		{
+			mx.lock();
+			Angle next = qAngles.front();
+			qAngles.pop();
+			mx.unlock();
+
+			sf::Image result = tinyraytracer.render(next.v, next.h, next.logo);
+			ImgPriority ip = ImgPriority(result,next.frameNb);
+			mx.lock();
+			qImages.push(ip);
+			mx.unlock();
+		}
+	}
 }

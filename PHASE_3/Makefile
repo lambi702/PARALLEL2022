@@ -11,13 +11,13 @@ tinyrt: tinyraytracer.o model.o main.o
 	g++ $(LDFLAGS) $(CPPFLAGS) -o tinyrt tinyraytracer.o model.o main.o -lsfml-graphics -lsfml-window -lsfml-system
 
 tinyraytracer.o: tinyraytracer.cc tinyraytracer.hh model.hh
-	g++ $(CPPFLAGS) -c tinyraytracer.cc
+	g++ $(CPPFLAGS) -c tinyraytracer.cc -lsfml-graphics -lsfml-window -lsfml-system
 
 model.o: model.cc model.hh
-	g++ $(CPPFLAGS) -c model.cc
+	g++ $(CPPFLAGS) -c model.cc -lsfml-graphics -lsfml-window -lsfml-system
 
-main.o: main.cc tinyraytracer.hh
-	g++ $(CPPFLAGS) -c main.cc
+main.o: main.cc tinyraytracer.hh threadpool.cc
+	g++ $(CPPFLAGS) -c main.cc -lsfml-graphics -lsfml-window -lsfml-system
 
 debug: tinyrt
 

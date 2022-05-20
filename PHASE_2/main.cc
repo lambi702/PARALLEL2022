@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
 				mx.lock();
 				if (qAngles.size() < Q_MAX)
 				{
-					angle_logo += 50. / fps;
+					angle_logo +=  6. / fps;
 					if (angle_logo>=360.)
 						angle_logo -= 360.; 
 							update = true;
