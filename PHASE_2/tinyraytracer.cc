@@ -5,6 +5,7 @@
 #include <fstream>
 #include <vector>
 #include <algorithm>
+#include <SFML/Graphics.hpp>
 
 #include "geometry.hh"
 #include "tinyraytracer.hh"

@@ -1,39 +1,36 @@
 #include <iostream>
 #include <queue>
-#include <thread>
+#include <vector>
 
-#include "tinyraytracer.hh"
+#include <SFML/Graphics.hpp>
 
-// typedef struct image_struct_t {
-//   sf::Image image;
-//   int id;
-//   bool operator<(const image_struct_t& rhs) const{
-//     return id < rhs.id;
-//   }
-// } Image;
+struct ImgPriority {
+  sf::Image image;
+  int order;
 
-// int main(){
-//   std::priority_queue<Image*> image_queue;
+  ImgPriority(sf::Image image,int order)
+    : image(image), order(order)
+    {
+    }
+};
 
-//   Image* test1 = (Image*)malloc(sizeof(Image));
-//   test1->image = sf::Image ();
-//   test1->id = 2;
-
-//   Image* test2 = (Image*)malloc(sizeof(Image));
-//   test2->image = sf::Image ();
-//   test2->id = 1;
-
-//   image_queue.push(test1);
-//   image_queue.push(test2);
-
-//   Image* recup = image_queue.top();
-//   image_queue.pop();
-
-//   std::cout << recup->id << std::endl;
-
-//   return 0;
-// }
+struct cmpPriority {
+  bool operator()(ImgPriority const& i1, ImgPriority const& i2){
+    return i1.order > i2.order; // Faire sortir l'élément ayant la plus petite priorité
+  }
+};
 
 int main(){
+  std::priority_queue<ImgPriority,std::vector<ImgPriority>,cmpPriority> pQueueImg;
 
+  pQueueImg.push(ImgPriority(sf::Image(),10));
+  pQueueImg.push(ImgPriority(sf::Image(),9));
+  pQueueImg.push(ImgPriority(sf::Image(),11));
+  pQueueImg.push(ImgPriority(sf::Image(),8));
+
+  for(int i = 3; i >= 0; i--){
+    ImgPriority front = pQueueImg.top();
+    pQueueImg.pop();
+    std::cout << front.order << std::endl;
+  }
 }
