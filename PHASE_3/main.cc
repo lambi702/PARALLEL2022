@@ -11,22 +11,25 @@
 */
 #define WIDTH 512
 #define HEIGHT 384
-#define Q_MAX 20
+#define Q_MAX 15
 
-struct ImgPriority {
-  sf::Image image;
-  int order;
+struct ImgPriority
+{
+	sf::Image image;
+	int order;
 
-  ImgPriority(sf::Image image,int order)
-    : image(image), order(order)
-    {
-    }
+	ImgPriority(sf::Image image, int order)
+		: image(image), order(order)
+	{
+	}
 };
 
-struct cmpPriority {
-  bool operator()(ImgPriority const& i1, ImgPriority const& i2){
-    return i1.order > i2.order; // Faire sortir l'élément ayant la plus petite priorité
-  }
+struct cmpPriority
+{
+	bool operator()(ImgPriority const &i1, ImgPriority const &i2)
+	{
+		return i1.order > i2.order; // Faire sortir l'élément ayant la plus petite priorité
+	}
 };
 
 struct Angle
@@ -34,13 +37,15 @@ struct Angle
 	float v;
 	float h;
 	float logo;
+	float z_red;
+	float size_mirror;
 	unsigned long long int frameNb;
 };
 
 bool boolWindow = true;
 void compute(Tinyraytracer tinyraytracer);
 std::mutex mx;
-std::priority_queue<ImgPriority,std::vector<ImgPriority>,cmpPriority> qImages;
+std::priority_queue<ImgPriority, std::vector<ImgPriority>, cmpPriority> qImages;
 std::queue<Angle> qAngles;
 
 int main(int argc, char *argv[])
@@ -97,8 +102,9 @@ int main(int argc, char *argv[])
 		sf::Image result;
 		sf::Texture texture;
 		sf::Sprite sprite;
-		float angle_h = 0., angle_v = 0., z_red = -0.5, size_mirror = 4.;
+		float angle_h = 0., angle_v = 0., z_red = -0.5, size_mirror = 3.;
 		float angle_logo = 15.;
+		bool up = true, big = true;
 		sf::Clock clock;
 		clock.restart();
 
@@ -121,10 +127,35 @@ int main(int argc, char *argv[])
 				mx.lock();
 				if (qAngles.size() < Q_MAX)
 				{
+					if (up)
+					{
+						z_red += (2. / 5.) / fps;
+						if ( z_red > 0.)
+							up = false;
+					}
+					else
+					{
+						z_red -= (2./5.) / fps;
+						if (z_red < -1.)
+							up = true;
+					}
+					if (big)
+					{
+						size_mirror += (2./3.) / fps;
+						if (size_mirror > 4)
+							big = false;
+					}
+					else
+					{
+						size_mirror -= 2.0 / (3 * fps);
+						if (size_mirror < 3)
+							big = true;
+					}
+
 					angle_logo += 6. / fps;
-					if (angle_logo>=360.)
-						angle_logo -= 360.; 
-							update = true;
+					if (angle_logo >= 360.)
+						angle_logo -= 360.;
+					update = true;
 				}
 				mx.unlock();
 			}
@@ -192,6 +223,8 @@ int main(int argc, char *argv[])
 				angle.v = angle_v;
 				angle.h = angle_h;
 				angle.logo = angle_logo;
+				angle.z_red = z_red;
+				angle.size_mirror = size_mirror;
 				angle.frameNb = frameCounter;
 
 				mx.lock();
@@ -225,7 +258,7 @@ int main(int argc, char *argv[])
 	}
 	else
 	{
-		sf::Image result = tinyraytracer.render(0, 0, 15);
+		sf::Image result = tinyraytracer.render(0, 0, 15, -0.5, 4);
 		result.saveToFile("out.jpg");
 	}
 	return 0;
@@ -246,8 +279,8 @@ void compute(Tinyraytracer tinyraytracer)
 			qAngles.pop();
 			mx.unlock();
 
-			sf::Image result = tinyraytracer.render(next.v, next.h, next.logo);
-			ImgPriority ip = ImgPriority(result,next.frameNb);
+			sf::Image result = tinyraytracer.render(next.v, next.h, next.logo, next.z_red, next.size_mirror);
+			ImgPriority ip = ImgPriority(result, next.frameNb);
 			mx.lock();
 			qImages.push(ip);
 			mx.unlock();

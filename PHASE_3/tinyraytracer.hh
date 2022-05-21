@@ -63,11 +63,13 @@ public:
   Tinyraytracer(unsigned w, unsigned h, sf::Image env_img, sf::Image logo_img, Vec3f apos);
   void add_sphere(Sphere s) { spheres.push_back(s); };
   void add_light(Light l) { lights.push_back(l); };
-  sf::Image render(float anglev, float angleh, float anglel);
+  sf::Image render(float anglev, float angleh, float anglel, float z_red, float size_mirror);
 private:
   bool scene_intersect(const Vec3f &orig, const Vec3f &dir, Vec3f &hit, Vec3f &N, float anglel,
 		       Material &material);
   Vec3f cast_ray(const Vec3f &orig, const Vec3f &dir, float anglel, size_t depth);
+  void update_size_mirror(float size_mirror);
+  void update_z_red(float z_red);
 };
 
 #endif
