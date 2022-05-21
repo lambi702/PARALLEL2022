@@ -1,5 +1,5 @@
 CPPFLAGS=-Wall --pedantic -O3 -std=c++11
-CPPFLAGS+= -Xpreprocessor -fopenmp
+CPPFLAGS+= -fopenmp
 LDFLAGS=-g
 
 debug: CPPFLAGS+= -O0
@@ -8,7 +8,7 @@ debug: CPPFLAGS+= -ftrapv
 debug: CPPFLAGS+= -DDEBUG
 
 tinyrt: tinyraytracer.o model.o main.o
-	g++ $(LDFLAGS) $(CPPFLAGS) -o tinyrt tinyraytracer.o model.o main.o -lsfml-graphics -lsfml-window -lsfml-system -lomp
+	g++ $(LDFLAGS) $(CPPFLAGS) -o tinyrt tinyraytracer.o model.o main.o -lsfml-graphics -lsfml-window -lsfml-system
 
 tinyraytracer.o: tinyraytracer.cc tinyraytracer.hh model.hh
 	g++ $(CPPFLAGS) -c tinyraytracer.cc
