@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
 					}
 
 					angle_logo += 6. / fps;
-					if (angle_logo >= 360.)
+					if (angle_logo > 360.)
 						angle_logo -= 360.;
 					update = true;
 				}

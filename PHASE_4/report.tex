@@ -1,0 +1,122 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{enumitem}
+
+\usepackage{graphicx}
+
+\usepackage{bbold}
+\usepackage{bm}
+\usepackage{color}
+\usepackage{hyperref}
+\usepackage[margin=2.5cm]{geometry}
+
+\usepackage{fancyhdr}
+
+\usepackage[french]{babel}
+\usepackage[T1]{fontenc}
+
+\usepackage{tcolorbox}
+\usepackage{fancyvrb}
+\usepackage{scrextend}
+
+\makeatletter
+
+\makeatother
+
+\begin{document}
+
+% ==============================================================================
+
+\title{Concurrent tiny ray tracer}								% Title
+\author{Romain LAMBERMONT, Arthur LOUIS}								% Author
+\date{\today}											% Date
+
+\makeatletter
+\let\thetitle\@title
+\let\theauthor\@author
+\let\thedate\@date
+\makeatother
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\theauthor}
+\lhead{\thetitle}
+\cfoot{\thepage}
+
+\begin{titlepage}
+ \centering
+ \vspace*{0.5 cm}
+ \includegraphics[scale = 0.7]{figs/facsa.png}\\[1.0 cm]	% University Logo
+ \textsc{\LARGE \newline\newline Faculté des Sciences appliquées}\\[2.0 cm]	% University Name
+ \textsc{\Large INFO9012-A-a : Parallel Programming}\\[0.5 cm]				% Course Code
+ \rule{\linewidth}{0.2 mm} \\[0.4 cm]
+ {\huge \bfseries From a sequential to a concurrent tiny ray tracer}\\
+ \rule{\linewidth}{0.2 mm} \\[1.5 cm]
+
+ \begin{minipage}{0.5\textwidth}
+ 	\begin{flushleft} \large
+ 		\emph{Professeur :}\\
+ 		  Pascal FONTAINE\\
+    \vspace{0.5cm}
+ 		\end{flushleft}
+ 		\end{minipage}~
+ 		\begin{minipage}{0.4\textwidth}
+
+ 		\begin{flushright} \large
+ 		\emph{Groupe :} \\
+      Romain LAMBERMONT\\
+      Arthur LOUIS\\
+ 	\end{flushright}
+
+ \end{minipage}\\[2 cm]
+ \vspace{5cm}
+ \thedate
+\end{titlepage}
+
+\setcounter{page}{1}
+
+\section{Hardware}
+We ran the tests on an 2022 ASUS Zenbook running a 4 cores Intel i7 11th generation CPU, which was already a pretty good starting base. Indeed by 
+running the ray tracer sequentially, we acheived 8 frames per second.
+
+\section{Phase 1}
+For the first phase we simply used OpenMP by adding a simple line over the actual rendering loop to allow OpenMP to compute the frames 
+of the ray tracer in parallel. This simple line allowed us to go from 8 to 18 frames per second. This line was :
+\begin{verbatim}
+  #pragma omp parallel for
+\end{verbatim}
+
+\section{Phase 2}
+For the second phase, we moved from using OpenMP, to actually use the threads of the CPU with the \verb|C++ <thread>| library. We used 1 thread to receive the 
+inputs from the keyboard and to displays the frames while \verb|N-1| threads computed the frames in parallel with \verb|N| being the number of available threads in the system.
+\paragraph{}
+The computing threads are stocked in a vector and ran in a \verb|while(boolWindow)| loop, which was always true as long as the window was open. When the window is closed, the threads are disabled using the \verb|join| method. To 
+ensure that there were no data race, we used the \verb|mutex| library to lock and unlock the read and write of data correctly. To ensure that the images arrived in the good order to the displaying thread, we used a priority queue with 
+a personalized structure adding an field \verb|order| in the \verb|sf::Image| object.
+\paragraph{}
+With the threads, we acheived a 28 frames per second, which is a pretty good improvement from the first phase.
+
+\section{Phase 3}
+For this phase, we reused our threads from the previous phase and simply modified the computation of the position and size of the spheres in the main function while also creating 2 methods to update these values in the tinyraytracer object to display them 
+with the changing position and size. To ensure the period of oscillation of the spheres, we used the values $\frac{2}{3}*\text{fps }$ and $\frac{2}{5}*\text{fps }$ for respectively the red rubber ball and the mirror ball. With the mirror sphere changing in size (hardest thing to compute 
+by the ray tracer), the ball was sometimes big or small, improving the average frames per second and leading us to aroung 37 frames per second in this phase.
+\section{Conclusion}
+We gathered our results in this small table :
+
+\begin{table}[!h]
+  \centering
+  \begin{tabular}{|c|c|c|c|c|}
+  \hline
+  Phase & Initial & OpenMP & Threads & Threads + Oscillating spheres \\ \hline
+  FPS   & 8       & 18     & 28      & 37                            \\ \hline
+  \end{tabular}
+  \caption{Frames per second relative to the phase}
+  \label{tab:resume}
+\end{table}
+
+\end{document}

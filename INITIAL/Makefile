@@ -1,5 +1,5 @@
-CPPFLAGS=-Wall --pedantic -O3
-CPPFLAGS+= -fopenmp
+CPPFLAGS=-Wall --pedantic -O3 -std=c++11
+CPPFLAGS+= -Xpreprocessor -fopenmp
 LDFLAGS=-g
 
 debug: CPPFLAGS+= -O0
